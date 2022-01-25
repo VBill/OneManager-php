@@ -38,6 +38,10 @@ $EnvConfigs = [
     'useBasicAuth'      => 0b010,
     'referrer'          => 0b011,
     'forceHttps'        => 0b010,
+    'globalHeadOmf'     => 0b011,
+    'globalHeadMd'      => 0b011,
+    'globalReadmeMd'    => 0b011,
+    'globalFootOmf'     => 0b011,
 
     'Driver'            => 0b100,
     'client_id'         => 0b100,
@@ -2852,6 +2856,8 @@ function render_list($path = '', $files = [])
         $tmp = splitfirst($tmp[1], '<!--HeadomfEnd-->');
         if (isset($files['list']['head.omf'])) {
             $headomf = str_replace('<!--HeadomfContent-->', get_content(path_format($path . '/' . $files['list']['head.omf']['name']))['content']['body'], $tmp[0]);
+        } elseif (getConfig('globalHeadOmf')) {
+            $headomf = str_replace('<!--HeadomfContent-->', curl(getConfig('globalHeadOmf'))['body'], $tmp[0]);
         }
         $html .= $headomf . $tmp[1];
         
@@ -2860,6 +2866,13 @@ function render_list($path = '', $files = [])
         $tmp = splitfirst($tmp[1], '<!--HeadmdEnd-->');
         if (isset($files['list']['head.md'])) {
             $headmd = str_replace('<!--HeadmdContent-->', get_content(path_format($path . '/' . $files['list']['head.md']['name']))['content']['body'], $tmp[0]);
+            $html .= $headmd . $tmp[1];
+            while (strpos($html, '<!--HeadmdStart-->')) {
+                $html = str_replace('<!--HeadmdStart-->', '', $html);
+                $html = str_replace('<!--HeadmdEnd-->', '', $html);
+            }
+        } elseif (getConfig('globalHeadMd')) {
+            $headmd = str_replace('<!--HeadmdContent-->', curl('GET', getConfig('globalHeadMd'))['body'], $tmp[0]);
             $html .= $headmd . $tmp[1];
             while (strpos($html, '<!--HeadmdStart-->')) {
                 $html = str_replace('<!--HeadmdStart-->', '', $html);
@@ -2899,6 +2912,13 @@ function render_list($path = '', $files = [])
                 $html = str_replace('<!--ReadmemdStart-->', '', $html);
                 $html = str_replace('<!--ReadmemdEnd-->', '', $html);
             }
+        } elseif (getConfig('globalReadmeMd')) {
+            $Readmemd = str_replace('<!--ReadmemdContent-->', curl('GET', getConfig('globalReadmeMd'))['body'], $tmp[0]);
+            $html .= $Readmemd . $tmp[1];
+            while (strpos($html, '<!--ReadmemdStart-->')) {
+                $html = str_replace('<!--ReadmemdStart-->', '', $html);
+                $html = str_replace('<!--ReadmemdEnd-->', '', $html);
+            }
         } else {
             $html .= $tmp[1];
             $tmp[1] = 'a';
@@ -2910,12 +2930,14 @@ function render_list($path = '', $files = [])
             }
         }
 
-        
+
         $tmp = splitfirst($html, '<!--FootomfStart-->');
         $html = $tmp[0];
         $tmp = splitfirst($tmp[1], '<!--FootomfEnd-->');
         if (isset($files['list']['foot.omf'])) {
             $Footomf = str_replace('<!--FootomfContent-->', get_content(path_format($path . '/' . $files['list']['foot.omf']['name']))['content']['body'], $tmp[0]);
+        } elseif (getConfig('globalFootOmf')) {
+            $Footomf = str_replace('<!--FootomfContent-->', curl('GET', getConfig('globalFootOmf'))['body'], $tmp[0]);
         }
         $html .= $Footomf . $tmp[1];
 
@@ -2923,7 +2945,7 @@ function render_list($path = '', $files = [])
         $tmp = splitfirst($html, '<!--MdRequireStart-->');
         $html = $tmp[0];
         $tmp = splitfirst($tmp[1], '<!--MdRequireEnd-->');
-        if (isset($files['list']['head.md'])||isset($files['list']['readme.md'])) {
+        if (isset($files['list']['head.md'])||isset($files['list']['readme.md'])||getConfig('globalHeadMd')||getConfig('globalReadmeMd')) {
             $html .= $tmp[0] . $tmp[1];
         } else $html .= $tmp[1];
 
