@@ -1658,7 +1658,7 @@ output:
         $Driver_arr = scandir(__DIR__ . $slash . 'disk');
         if (count($disktags)>1) {
             $frame .= '
-<script src="//cdn.bootcss.com/Sortable/1.8.3/Sortable.js"></script>
+<script src="http://sortablejs.github.io/Sortable/Sortable.js"></script>
 <style>
     .sortable-ghost {
         opacity: 0.4;
@@ -1669,24 +1669,26 @@ output:
         cursor: move;
     }
 </style>
+' . getconstStr('DragSort') . ':
+<form id="sortdisks_form" action="" method="post" style="margin: 0" onsubmit="return dragsort(this);">
 <table border=1>
-    <form id="sortdisks_form" action="" method="post" style="margin: 0" onsubmit="return dragsort(this);">
-    <tr id="sortdisks">
-        <input type="hidden" name="disktag_sort" value="">';
+    <tbody id="sortdisks">
+    <input type="hidden" name="disktag_sort" value="">';
             $num = 0;
             foreach ($disktags as $disktag) {
                 if ($disktag!='') {
                     $num++;
                     $frame .= '
-        <td>' . $disktag . '</td>';
+        <tr><td>' . $num . '</td><td class="sorthandle"> ' . $disktag . '</td></tr>';
                 }
             }
             $frame .= '
-        <input name="_admin" type="hidden" value="">
-    </tr>
-    <tr><td colspan="' . $num . '">' . getconstStr('DragSort') . '<input type="submit" name="submit1" value="' . getconstStr('SubmitSortdisks') . '"></td></tr>
-    </form>
+    </tbody>
+    <input name="_admin" type="hidden" value="">
 </table>
+    <input type="submit" name="submit1" value="' . getconstStr('SubmitSortdisks') . '">
+</form>
+
 <script>
     var disks=' . json_encode($disktags) . ';
     function change(arr, oldindex, newindex) {
@@ -1719,7 +1721,8 @@ output:
         }
         return true;
     }
-    Sortable.create(document.getElementById(\'sortdisks\'), {
+    new Sortable(document.getElementById(\'sortdisks\'), {
+        //handle: \'.sorthandle\',
         animation: 150,
         onEnd: function (evt) { //拖拽完毕之后发生该事件
             //console.log(evt.oldIndex);
@@ -2021,31 +2024,30 @@ output:
     }
     $html .= '
 <style type="text/css">
-    .tabs td { padding: 5px; }
+    .tabs { padding: 10px; white-space: nowrap; overflow-x: auto;}
+    .tabs a { margin:0 10px; }
 </style>
-<table border=0>
-    <tr class="tabs">';
+<div class="tabs">';
     if ($_GET['disktag']==''||$_GET['disktag']===true||!in_array($_GET['disktag'], $disktags)) {
         if ($_GET['setup']==='platform') $html .= '
-        <td><a href="?setup">' . getconstStr('Home') . '</a></td>
-        <td>' . getconstStr('PlatformConfig') . '</td>';
+    <a href="?setup">' . getconstStr('Home') . '</a>
+    ' . getconstStr('PlatformConfig') . '';
         else $html .= '
-        <td>' . getconstStr('Home') . '</td>
-        <td><a href="?setup=platform">' . getconstStr('PlatformConfig') . '</a></td>';
+    ' . getconstStr('Home') . '
+    <a href="?setup=platform">' . getconstStr('PlatformConfig') . '</a>';
     } else $html .= '
-        <td><a href="?setup">' . getconstStr('Home') . '</a></td>
-        <td><a href="?setup=platform">' . getconstStr('PlatformConfig') . '</a></td>';
+    <a href="?setup">' . getconstStr('Home') . '</a>
+    <a href="?setup=platform">' . getconstStr('PlatformConfig') . '</a>';
     foreach ($disktags as $disktag) {
         if ($disktag!='') {
             if ($_GET['disktag']===$disktag) $html .= '
-        <td>' . $disktag . '</td>';
+    ' . $disktag . '';
             else $html .= '
-        <td><a href="?setup&disktag=' . $disktag . '">' . $disktag . '</a></td>';
+    <a href="?setup&disktag=' . $disktag . '">' . $disktag . '</a>';
         }
     }
     $html .= '
-    </tr>
-</table><br>';
+</div><br>';
     $html .= $frame;
     $html .= '<script>
     var inputAdminStorage = document.getElementsByName("_admin");
@@ -2857,7 +2859,14 @@ function render_list($path = '', $files = [])
         if (isset($files['list']['head.omf'])) {
             $headomf = str_replace('<!--HeadomfContent-->', get_content(path_format($path . '/' . $files['list']['head.omf']['name']))['content']['body'], $tmp[0]);
         } elseif (getConfig('globalHeadOmf')) {
-            $headomf = str_replace('<!--HeadomfContent-->', curl(getConfig('globalHeadOmf'))['body'], $tmp[0]);
+            if (!$headomfcontent = getcache('HeadomfContent')) {
+                $headomfres = curl('GET', getConfig('globalHeadOmf'), '', [], 0, 1);
+                if ($headomfres['stat']==200) {
+                    $headomfcontent = $headomfres['body'];
+                    savecache('HeadomfContent', $headomfcontent);
+                } else $headomfcontent = $headomfres['stat'];
+            }
+            $headomf = str_replace('<!--HeadomfContent-->', $headomfcontent, $tmp[0]);
         }
         $html .= $headomf . $tmp[1];
         
@@ -2872,7 +2881,14 @@ function render_list($path = '', $files = [])
                 $html = str_replace('<!--HeadmdEnd-->', '', $html);
             }
         } elseif (getConfig('globalHeadMd')) {
-            $headmd = str_replace('<!--HeadmdContent-->', curl('GET', getConfig('globalHeadMd'))['body'], $tmp[0]);
+            if (!$headmdcontent = getcache('HeadmdContent')) {
+                $headmdres = curl('GET', getConfig('globalHeadMd'), '', [], 0, 1);
+                if ($headmdres['stat']==200) {
+                    $headmdcontent = $headmdres['body'];
+                    savecache('HeadmdContent', $headmdcontent);
+                } else $headmdcontent = $headmdres['stat'];
+            }
+            $headmd = str_replace('<!--HeadmdContent-->', $headmdcontent, $tmp[0]);
             $html .= $headmd . $tmp[1];
             while (strpos($html, '<!--HeadmdStart-->')) {
                 $html = str_replace('<!--HeadmdStart-->', '', $html);
@@ -2913,7 +2929,14 @@ function render_list($path = '', $files = [])
                 $html = str_replace('<!--ReadmemdEnd-->', '', $html);
             }
         } elseif (getConfig('globalReadmeMd')) {
-            $Readmemd = str_replace('<!--ReadmemdContent-->', curl('GET', getConfig('globalReadmeMd'))['body'], $tmp[0]);
+            if (!$readmemdcontent = getcache('ReadmemdContent')) {
+                $readmemdres = curl('GET', getConfig('globalReadmeMd'), '', [], 0, 1);
+                if ($readmemdres['stat']==200) {
+                    $readmemdcontent = $readmemdres['body'];
+                    savecache('ReadmemdContent', $readmemdcontent);
+                } else $readmemdcontent = $readmemdres['stat'];
+            }
+            $Readmemd = str_replace('<!--ReadmemdContent-->', $readmemdcontent, $tmp[0]);
             $html .= $Readmemd . $tmp[1];
             while (strpos($html, '<!--ReadmemdStart-->')) {
                 $html = str_replace('<!--ReadmemdStart-->', '', $html);
@@ -2937,7 +2960,14 @@ function render_list($path = '', $files = [])
         if (isset($files['list']['foot.omf'])) {
             $Footomf = str_replace('<!--FootomfContent-->', get_content(path_format($path . '/' . $files['list']['foot.omf']['name']))['content']['body'], $tmp[0]);
         } elseif (getConfig('globalFootOmf')) {
-            $Footomf = str_replace('<!--FootomfContent-->', curl('GET', getConfig('globalFootOmf'))['body'], $tmp[0]);
+            if (!$footomfcontent = getcache('FootomfContent')) {
+                $footres = curl('GET', getConfig('globalFootOmf'), '', [], 0, 1);
+                if ($footres['stat']==200) {
+                    $footomfcontent = $footres['body'];
+                    savecache('FootomfContent', $footomfcontent);
+                } else $footomfcontent = $footres['stat'];
+            }
+            $Footomf = str_replace('<!--FootomfContent-->', $footomfcontent, $tmp[0]);
         }
         $html .= $Footomf . $tmp[1];
 
