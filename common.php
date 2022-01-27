@@ -1679,7 +1679,7 @@ output:
                 if ($disktag!='') {
                     $num++;
                     $frame .= '
-        <tr><td>' . $num . '</td><td class="sorthandle"> ' . $disktag . '</td></tr>';
+        <tr class="sorthandle"><td>' . $num . '</td><td> ' . $disktag . '</td></tr>';
                 }
             }
             $frame .= '
@@ -1722,7 +1722,7 @@ output:
         return true;
     }
     new Sortable(document.getElementById(\'sortdisks\'), {
-        //handle: \'.sorthandle\',
+        handle: \'.sorthandle\',
         animation: 150,
         onEnd: function (evt) { //拖拽完毕之后发生该事件
             //console.log(evt.oldIndex);
