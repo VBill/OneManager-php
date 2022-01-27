@@ -38,10 +38,10 @@ $EnvConfigs = [
     'useBasicAuth'      => 0b010,
     'referrer'          => 0b011,
     'forceHttps'        => 0b010,
-    'globalHeadOmf'     => 0b011,
-    'globalHeadMd'      => 0b011,
-    'globalReadmeMd'    => 0b011,
-    'globalFootOmf'     => 0b011,
+    'globalHeadOmfUrl'  => 0b011,
+    'globalHeadMdUrl'   => 0b011,
+    'globalReadmeMdUrl' => 0b011,
+    'globalFootOmfUrl'  => 0b011,
 
     'Driver'            => 0b100,
     'client_id'         => 0b100,
@@ -1654,8 +1654,6 @@ output:
     }
 </script>';
     } else {
-        //$_GET['disktag'] = '';
-        $Driver_arr = scandir(__DIR__ . $slash . 'disk');
         if (count($disktags)>1) {
             $frame .= '
 <script src="http://sortablejs.github.io/Sortable/Sortable.js"></script>
@@ -1735,6 +1733,7 @@ output:
     });
 </script><br>';
         }
+        $Driver_arr = scandir(__DIR__ . $slash . 'disk');
         $frame .= '
 <select name="DriveType" onchange="changedrivetype(this.options[this.options.selectedIndex].value)">';
         foreach ($Driver_arr as $v1) {
@@ -2858,9 +2857,9 @@ function render_list($path = '', $files = [])
         $tmp = splitfirst($tmp[1], '<!--HeadomfEnd-->');
         if (isset($files['list']['head.omf'])) {
             $headomf = str_replace('<!--HeadomfContent-->', get_content(path_format($path . '/' . $files['list']['head.omf']['name']))['content']['body'], $tmp[0]);
-        } elseif (getConfig('globalHeadOmf')) {
+        } elseif (getConfig('globalHeadOmfUrl')) {
             if (!$headomfcontent = getcache('HeadomfContent')) {
-                $headomfres = curl('GET', getConfig('globalHeadOmf'), '', [], 0, 1);
+                $headomfres = curl('GET', getConfig('globalHeadOmfUrl'), '', [], 0, 1);
                 if ($headomfres['stat']==200) {
                     $headomfcontent = $headomfres['body'];
                     savecache('HeadomfContent', $headomfcontent);
@@ -2880,9 +2879,9 @@ function render_list($path = '', $files = [])
                 $html = str_replace('<!--HeadmdStart-->', '', $html);
                 $html = str_replace('<!--HeadmdEnd-->', '', $html);
             }
-        } elseif (getConfig('globalHeadMd')) {
+        } elseif (getConfig('globalHeadMdUrl')) {
             if (!$headmdcontent = getcache('HeadmdContent')) {
-                $headmdres = curl('GET', getConfig('globalHeadMd'), '', [], 0, 1);
+                $headmdres = curl('GET', getConfig('globalHeadMdUrl'), '', [], 0, 1);
                 if ($headmdres['stat']==200) {
                     $headmdcontent = $headmdres['body'];
                     savecache('HeadmdContent', $headmdcontent);
@@ -2928,9 +2927,9 @@ function render_list($path = '', $files = [])
                 $html = str_replace('<!--ReadmemdStart-->', '', $html);
                 $html = str_replace('<!--ReadmemdEnd-->', '', $html);
             }
-        } elseif (getConfig('globalReadmeMd')) {
+        } elseif (getConfig('globalReadmeMdUrl')) {
             if (!$readmemdcontent = getcache('ReadmemdContent')) {
-                $readmemdres = curl('GET', getConfig('globalReadmeMd'), '', [], 0, 1);
+                $readmemdres = curl('GET', getConfig('globalReadmeMdUrl'), '', [], 0, 1);
                 if ($readmemdres['stat']==200) {
                     $readmemdcontent = $readmemdres['body'];
                     savecache('ReadmemdContent', $readmemdcontent);
@@ -2959,9 +2958,9 @@ function render_list($path = '', $files = [])
         $tmp = splitfirst($tmp[1], '<!--FootomfEnd-->');
         if (isset($files['list']['foot.omf'])) {
             $Footomf = str_replace('<!--FootomfContent-->', get_content(path_format($path . '/' . $files['list']['foot.omf']['name']))['content']['body'], $tmp[0]);
-        } elseif (getConfig('globalFootOmf')) {
+        } elseif (getConfig('globalFootOmfUrl')) {
             if (!$footomfcontent = getcache('FootomfContent')) {
-                $footres = curl('GET', getConfig('globalFootOmf'), '', [], 0, 1);
+                $footres = curl('GET', getConfig('globalFootOmfUrl'), '', [], 0, 1);
                 if ($footres['stat']==200) {
                     $footomfcontent = $footres['body'];
                     savecache('FootomfContent', $footomfcontent);
@@ -2975,7 +2974,7 @@ function render_list($path = '', $files = [])
         $tmp = splitfirst($html, '<!--MdRequireStart-->');
         $html = $tmp[0];
         $tmp = splitfirst($tmp[1], '<!--MdRequireEnd-->');
-        if (isset($files['list']['head.md'])||isset($files['list']['readme.md'])||getConfig('globalHeadMd')||getConfig('globalReadmeMd')) {
+        if (isset($files['list']['head.md'])||isset($files['list']['readme.md'])||getConfig('globalHeadMdUrl')||getConfig('globalReadmeMdUrl')) {
             $html .= $tmp[0] . $tmp[1];
         } else $html .= $tmp[1];
 
